@@ -1,1 +1,4 @@
-sources: []
+sources:
+  - name: "Remote.com"
+    type: "greenhouse"
+    board_url: "https://job-boards.greenhouse.io/remotecom"
