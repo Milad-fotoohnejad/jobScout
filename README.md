@@ -1,4 +1,4 @@
-# JobScout — Job Discovery & Fit Scoring Pipeline
+# JobScout: Job Discovery & Fit Scoring Pipeline
 
 JobScout is a modular job-intelligence pipeline that discovers new job postings early across multiple sources, normalizes the data into a consistent schema, scores each posting against a personal “fit rubric,” deduplicates results, and saves high-signal matches for review and fast action.
 
@@ -69,3 +69,6 @@ PRs welcome. Please keep connectors isolated per source and add a small smoke te
 # License
 
 This project is licensed under the MIT License — see the LICENSE file.
+
+## Project Flow
+![JobScout Project Flow](docs/diagrams/jobscout-flow.png)

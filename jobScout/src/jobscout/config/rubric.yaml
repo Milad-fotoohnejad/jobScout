@@ -1,0 +1,5 @@
+rubric:
+  target_keywords: ["frontend", "react", "next.js"]
+  must_haves: ["remote"]
+  nice_to_haves: ["typescript", "graphql", "postgres"]
+  red_flags: ["unpaid", "10+ years", "on-site only"]
