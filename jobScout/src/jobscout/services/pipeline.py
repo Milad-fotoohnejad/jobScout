@@ -5,6 +5,8 @@ import yaml
 
 from jobscout.domain.job import Job
 from jobscout.connectors.ats.greenhouse import fetch_greenhouse_jobs
+from jobscout.storage.db import connect_sqlite, init_db
+from jobscout.storage.repositories.jobs_repo import JobsRepo
 
 
 def load_sources(path: str | Path) -> list[dict]:
@@ -13,7 +15,11 @@ def load_sources(path: str | Path) -> list[dict]:
     return data.get("sources", [])
 
 
-def run_once(sources_path: str | Path, debug: bool = False) -> list[Job]:
+def run_once(
+    sources_path: str | Path,
+    db_path: str | Path = "data/sqlite/jobscout.db",
+    debug: bool = False,
+) -> tuple[list[Job], int, int]:
     sources = load_sources(sources_path)
     if debug:
         print(f"[Pipeline] Loaded {len(sources)} sources from {sources_path}")
@@ -35,4 +41,11 @@ def run_once(sources_path: str | Path, debug: bool = False) -> list[Job]:
             jobs = fetch_greenhouse_jobs(board_url=board_url, company_name=name, debug=debug)
             all_jobs.extend(jobs)
 
-    return all_jobs
+    # Persist
+    conn = connect_sqlite(db_path)
+    init_db(conn)
+    repo = JobsRepo(conn)
+    inserted, updated = repo.upsert_jobs(all_jobs)
+    conn.close()
+
+    return all_jobs, inserted, updated

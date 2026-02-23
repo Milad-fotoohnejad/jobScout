@@ -27,13 +27,14 @@ def run_once(
     debug: bool = typer.Option(False, "--debug", help="Print debug diagnostics"),
 ) -> None:
     """Run a single ingestion pass and print discovered jobs."""
-    jobs = pipeline_run_once(Path(sources), debug=debug)
+    jobs, inserted, updated = pipeline_run_once(Path(sources), debug=debug)
+
+    typer.echo(f"Discovered {len(jobs)} jobs | New: {inserted} | Updated: {updated}\n")
 
     if not jobs:
-        typer.echo("No jobs found (or sources misconfigured).")
         raise typer.Exit(code=0)
 
-    typer.echo(f"Found {len(jobs)} jobs:\n")
+    # For now: print all jobs (next we’ll add --new-only filtering)
     for j in jobs:
         typer.echo(f"- {j.company} | {j.title} | {j.location or 'N/A'}")
         typer.echo(f"  {j.url}\n")

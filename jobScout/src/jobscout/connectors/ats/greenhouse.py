@@ -59,7 +59,21 @@ def fetch_greenhouse_jobs(
     jobs: list[Job] = []
 
     for a in openings:
-        title = a.text(strip=True)
+        raw_text = a.text(separator=" ", strip=True)
+
+        location = None
+        title = raw_text
+
+        # If the text includes a "Remote-..." suffix (as in your output), split it out
+        if "Remote-" in raw_text:
+            left, right = raw_text.rsplit("Remote-", 1)
+            title = left.strip()
+            location = ("Remote-" + right.strip()).strip()
+        else:
+        # fallback: try node-based location if available
+            loc_node = a.css_first(".location")
+            location = loc_node.text(strip=True) if loc_node else None
+
         href = (a.attributes.get("href") or "").strip()
         if not href:
             continue
