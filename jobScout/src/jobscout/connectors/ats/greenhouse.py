@@ -1,9 +1,53 @@
 from __future__ import annotations
 
+import re
 import httpx
-from selectolax.parser import HTMLParser
+from selectolax.parser import HTMLParser, Node
 
 from jobscout.domain.job import Job
+
+
+_JOB_ID_RE = re.compile(r"/jobs/(\d+)")
+
+
+def _abs_url(base_url: httpx.URL, board_url: str, href: str) -> str:
+    href = (href or "").strip()
+    if not href:
+        return ""
+    if href.startswith("/"):
+        return f"{base_url.scheme}://{base_url.host}{href}"
+    if href.startswith("http"):
+        return href
+    return board_url.rstrip("/") + "/" + href.lstrip("/")
+
+
+def _extract_location(anchor: Node) -> str | None:
+    """
+    Greenhouse job boards usually render location as a sibling element
+    near the <a> link, commonly under the parent container.
+    """
+    container = anchor.parent  # opening wrapper in most layouts
+    if not container:
+        return None
+
+    # Try a few common patterns
+    for sel in (".location", "span.location", "p.location", ".opening-location", "[data-location]"):
+        n = container.css_first(sel)
+        if n:
+            txt = n.text(strip=True)
+            if txt:
+                return txt
+
+    # Sometimes location is one level up
+    if container.parent:
+        for sel in (".location", "span.location", "p.location"):
+            n = container.parent.css_first(sel)
+            if n:
+                txt = n.text(strip=True)
+                if txt:
+                    return txt
+
+    return None
 
 
 def fetch_greenhouse_jobs(
@@ -33,15 +77,14 @@ def fetch_greenhouse_jobs(
 
     html = HTMLParser(r.text)
 
-    # Try multiple selectors because Greenhouse layouts vary slightly
     selectors = [
-        "a.opening",                 # common
-        "a[href*='/jobs/']",         # job links
-        "a[href*='/job/']",          # alt
-        "a[data-mce-href*='/jobs/']",# rare
+        "a.opening",
+        "a[href*='/jobs/']",
+        "a[href*='/job/']",
+        "a[data-mce-href*='/jobs/']",
     ]
 
-    openings = []
+    openings: list[Node] = []
     used = None
     for sel in selectors:
         nodes = html.css(sel)
@@ -52,47 +95,39 @@ def fetch_greenhouse_jobs(
 
     if debug:
         print(f"[Greenhouse] Selector used: {used!r} | Found nodes: {len(openings)}")
-        # Print a tiny snippet for visibility (first 400 chars)
         snippet = r.text[:400].replace("\n", " ")
         print(f"[Greenhouse] HTML snippet: {snippet}...")
 
     jobs: list[Job] = []
 
     for a in openings:
-        raw_text = a.text(separator=" ", strip=True)
-
-        location = None
-        title = raw_text
-
-        # If the text includes a "Remote-..." suffix (as in your output), split it out
-        if "Remote-" in raw_text:
-            left, right = raw_text.rsplit("Remote-", 1)
-            title = left.strip()
-            location = ("Remote-" + right.strip()).strip()
-        else:
-        # fallback: try node-based location if available
-            loc_node = a.css_first(".location")
-            location = loc_node.text(strip=True) if loc_node else None
-
         href = (a.attributes.get("href") or "").strip()
-        if not href:
+        url = _abs_url(r.url, board_url, href)
+        if not url:
             continue
-
-        if href.startswith("/"):
-            # Some boards are on boards.greenhouse.io, some on job-boards.greenhouse.io
-            base = f"{r.url.scheme}://{r.url.host}"
-            url = base + href
-        elif href.startswith("http"):
-            url = href
-        else:
-            url = board_url.rstrip("/") + "/" + href.lstrip("/")
-
-        loc_node = a.css_first(".location")
-        location = loc_node.text(strip=True) if loc_node else None
 
         # Avoid adding non-job links if selector is broad
         if "/jobs/" not in url and "/job/" not in url:
             continue
+
+        title = a.text(separator=" ", strip=True)
+        if not title:
+            continue
+
+        # Extract external_id from URL if present
+        m = _JOB_ID_RE.search(url)
+        external_id = m.group(1) if m else None
+
+        # Location is sometimes embedded in the anchor text (e.g., "... Remote-EMEA")
+        raw = title
+        location = None
+
+        if "Remote-" in raw:
+            left, right = raw.rsplit("Remote-", 1)
+            title = left.strip()
+            location = ("Remote-" + right.strip()).strip()
+        else:
+            location = _extract_location(a)
 
         jobs.append(
             Job(
@@ -101,11 +136,12 @@ def fetch_greenhouse_jobs(
                 title=title,
                 location=location,
                 url=url,
+                external_id=external_id,
             )
         )
 
-    # Deduplicate within this run (some selectors may pick duplicates)
-    unique = {}
+    # Deduplicate within this run
+    unique: dict[str, Job] = {}
     for j in jobs:
         unique[str(j.url)] = j
 

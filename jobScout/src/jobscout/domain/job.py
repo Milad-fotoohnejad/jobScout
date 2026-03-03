@@ -12,3 +12,6 @@ class Job(BaseModel):
     url: HttpUrl
     posted_at: Optional[str] = None
     description: Optional[str] = None
+
+    # New (optional, but high leverage)
+    external_id: Optional[str] = None
