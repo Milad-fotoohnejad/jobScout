@@ -1,17 +1,25 @@
 from __future__ import annotations
 
-import os
+import jobscout.services.scoring as scoring
+print("[DEBUG] scoring.py path:", scoring.__file__)
+
 import hashlib
+import os
 import re
-from dotenv import load_dotenv
-load_dotenv()
 from pathlib import Path
 
+from dotenv import load_dotenv
 from supabase import create_client
 
 from jobscout.domain.job import Job
 from jobscout.services.pipeline import run_once as pipeline_run_once
 from jobscout.services.scoring import score_and_tag
+
+
+# Load env vars from jobScout/.env.local if present, otherwise fallback to repo-root .env.local / .env
+load_dotenv("jobScout/.env.local")
+load_dotenv(".env.local")
+load_dotenv(".env")
 
 
 def _norm(s: str | None) -> str:
@@ -23,11 +31,14 @@ def _norm(s: str | None) -> str:
 
 
 def build_job_key(j: Job) -> str:
-    if getattr(j, "external_id", None):
-        raw = f"{_norm(j.source)}|{_norm(j.company)}|ext|{_norm(j.external_id)}"
-    else:
+    ext = getattr(j, "external_id", None)
+    if not ext:
+        # fallback only if no external id exists
         raw = f"{_norm(j.source)}|{_norm(j.company)}|{_norm(j.title)}|{_norm(j.location)}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+    # stable ID-based key (preferred)
+    return f"{_norm(j.source)}|{_norm(j.company)}|{ext}"
 
 
 def main() -> None:
@@ -36,13 +47,14 @@ def main() -> None:
     sb = create_client(supabase_url, service_key)
 
     sources = Path("jobScout/src/jobscout/config/sources.yaml")
-
     result = pipeline_run_once(sources_path=sources, debug=True)
 
-    rows = []
+    rows: list[dict] = []
+
     for j in result.jobs:
-        score, tags = score_and_tag(j)
+        score, tags, excluded, reasons = score_and_tag(j)
         job_key = build_job_key(j)
+
         rows.append(
             {
                 "job_key": job_key,
@@ -54,8 +66,11 @@ def main() -> None:
                 "external_id": getattr(j, "external_id", None),
                 "posted_at": j.posted_at,
                 "description": j.description,
-                "score": score,
+                "score": int(score),
                 "tags": tags,
+                "excluded": bool(excluded),
+                # Optional: store reasons as a readable string
+                "reasons": ",".join(reasons) if reasons else None,
             }
         )
 

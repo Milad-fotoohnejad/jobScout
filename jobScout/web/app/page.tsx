@@ -22,7 +22,7 @@ export default function Page() {
   async function load() {
     setLoading(true);
     const r = await fetch(
-      `/api/jobs?days=${days}&tag=${tag}&minScore=${minScore}`,
+      `/api/jobs?days=${days}&tag=${tag}&minScore=${minScore}&devOnly=1`,
       { cache: "no-store" },
     );
     const j = await r.json();

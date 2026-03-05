@@ -6,8 +6,9 @@ from typing import Any
 import time
 import yaml
 
-from jobscout.domain.job import Job
 from jobscout.connectors.ats.greenhouse import fetch_greenhouse_jobs
+from jobscout.connectors.ats.lever import fetch_lever_jobs
+from jobscout.domain.job import Job
 from jobscout.storage.db import connect_sqlite, init_db
 from jobscout.storage.repositories.jobs_repo import JobsRepo
 
@@ -64,6 +65,15 @@ def run_once(
                     debug=debug,
                 )
                 all_jobs.extend(jobs)
+
+            elif stype == "lever":
+                jobs = fetch_lever_jobs(
+                    board_url=board_url,
+                    company_name=name,
+                    debug=debug,
+                )
+                all_jobs.extend(jobs)
+
             else:
                 skipped_sources += 1
         except Exception as e:

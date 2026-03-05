@@ -1,6 +1,39 @@
 sources:
+  # --- Your current working boards ---
   - name: "Remote.com"
     type: "greenhouse"
     board_url: "https://job-boards.greenhouse.io/remotecom"
-    enabled: true
-    tags: ["remote", "global"]
+
+  - name: "Vercel"
+    type: "greenhouse"
+    board_url: "https://job-boards.greenhouse.io/vercel"
+
+  # --- Vancouver / BC companies (confirmed boards) ---
+  - name: "LayerZero Labs"
+    type: "greenhouse"
+    board_url: "https://job-boards.greenhouse.io/layerzerolabs"
+
+  - name: "Durable"
+    type: "greenhouse"
+    board_url: "https://job-boards.greenhouse.io/durable"
+
+  - name: "Launchpad Technologies"
+    type: "greenhouse"
+    board_url: "https://job-boards.greenhouse.io/launchpadtechnologiesinc"
+
+  - name: "Visier"
+    type: "greenhouse"
+    board_url: "https://job-boards.greenhouse.io/visiersolutionsinc"
+
+  - name: "Hootsuite"
+    type: "greenhouse"
+    board_url: "https://boards.greenhouse.io/hootsuite"
+
+  # --- Vancouver / BC companies on Lever (confirmed boards) ---
+  - name: "MineSense"
+    type: "lever"
+    board_url: "https://jobs.lever.co/minesense"
+
+  - name: "Arc'teryx"
+    type: "lever"
+    board_url: "https://jobs.lever.co/arcteryx.com"
