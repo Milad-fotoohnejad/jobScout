@@ -13,15 +13,18 @@ type Job = {
 };
 
 export default function Page() {
-  const [tag, setTag] = useState("frontend");
+  const [tag, setTag] = useState("");
+  const [minScore, setMinScore] = useState(0);
   const [days, setDays] = useState(7);
-  const [minScore, setMinScore] = useState(2);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function load() {
     setLoading(true);
-    const r = await fetch(`/api/jobs?days=${days}&tag=${tag}&minScore=${minScore}`, { cache: "no-store" });
+    const r = await fetch(
+      `/api/jobs?days=${days}&tag=${tag}&minScore=${minScore}`,
+      { cache: "no-store" },
+    );
     const j = await r.json();
     setJobs(j.data ?? []);
     setLoading(false);
@@ -32,13 +35,29 @@ export default function Page() {
   }, [tag, days, minScore]);
 
   return (
-    <main style={{ maxWidth: 1100, margin: "40px auto", padding: 16, fontFamily: "system-ui" }}>
+    <main
+      style={{
+        maxWidth: 1100,
+        margin: "40px auto",
+        padding: 16,
+        fontFamily: "system-ui",
+      }}
+    >
       <h1 style={{ fontSize: 28, fontWeight: 800 }}>JobScout Dashboard</h1>
 
-      <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginTop: 16,
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
         <label>
           Role{" "}
           <select value={tag} onChange={(e) => setTag(e.target.value)}>
+            <option value="">All</option>
             <option value="frontend">Front-End</option>
             <option value="webdev">Web Developer</option>
             <option value="fullstack">Full Stack</option>
@@ -49,7 +68,10 @@ export default function Page() {
 
         <label>
           Range{" "}
-          <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+          <select
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+          >
             <option value={1}>Last 24h</option>
             <option value={3}>Last 3 days</option>
             <option value={7}>Last 7 days</option>
@@ -69,7 +91,15 @@ export default function Page() {
           />
         </label>
 
-        <button onClick={load} disabled={loading} style={{ padding: "6px 10px", border: "1px solid #ddd", borderRadius: 8 }}>
+        <button
+          onClick={load}
+          disabled={loading}
+          style={{
+            padding: "6px 10px",
+            border: "1px solid #ddd",
+            borderRadius: 8,
+          }}
+        >
           {loading ? "Loading..." : "Refresh"}
         </button>
       </div>
@@ -89,14 +119,22 @@ export default function Page() {
               color: "inherit",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
               <div>
                 <div style={{ fontWeight: 800 }}>{job.title}</div>
                 <div style={{ opacity: 0.75 }}>
                   {job.company}
                   {job.location ? ` | ${job.location}` : ""}
                 </div>
-                <div style={{ fontSize: 12, opacity: 0.6 }}>Tags: {job.tags?.join(", ")}</div>
+                <div style={{ fontSize: 12, opacity: 0.6 }}>
+                  Tags: {job.tags?.join(", ")}
+                </div>
               </div>
               <div style={{ fontWeight: 800 }}>Score {job.score}</div>
             </div>
@@ -105,7 +143,8 @@ export default function Page() {
 
         {jobs.length === 0 && (
           <div style={{ opacity: 0.7, marginTop: 12 }}>
-            No jobs found. Once ingestion writes into Supabase, this will populate.
+            No jobs found. Once ingestion writes into Supabase, this will
+            populate.
           </div>
         )}
       </div>
