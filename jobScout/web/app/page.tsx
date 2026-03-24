@@ -13,18 +13,33 @@ type Job = {
 };
 
 export default function Page() {
-  const [tag, setTag] = useState("");
-  const [minScore, setMinScore] = useState(0);
-  const [days, setDays] = useState(7);
+  const [role, setRole] = useState("frontend");
+  const [hours, setHours] = useState(24);
+  const [minScore, setMinScore] = useState(4);
+  const [remoteOnly, setRemoteOnly] = useState(true);
+  const [strictTitles, setStrictTitles] = useState(true);
+  const [excludeSenior, setExcludeSenior] = useState(true);
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function load() {
     setLoading(true);
-    const r = await fetch(
-      `/api/jobs?days=${days}&tag=${tag}&minScore=${minScore}&devOnly=1`,
-      { cache: "no-store" },
-    );
+
+    const qs = new URLSearchParams({
+      hours: String(hours),
+      role,
+      minScore: String(minScore),
+      remoteOnly: remoteOnly ? "1" : "0",
+      strictTitles: strictTitles ? "1" : "0",
+      excludeSenior: excludeSenior ? "1" : "0",
+      devOnly: "1",
+    });
+
+    const r = await fetch(`/api/jobs?${qs.toString()}`, {
+      cache: "no-store",
+    });
+
     const j = await r.json();
     setJobs(j.data ?? []);
     setLoading(false);
@@ -32,7 +47,7 @@ export default function Page() {
 
   useEffect(() => {
     load();
-  }, [tag, days, minScore]);
+  }, [role, hours, minScore, remoteOnly, strictTitles, excludeSenior]);
 
   return (
     <main
@@ -55,27 +70,25 @@ export default function Page() {
         }}
       >
         <label>
-          Role{" "}
-          <select value={tag} onChange={(e) => setTag(e.target.value)}>
-            <option value="">All</option>
-            <option value="frontend">Front-End</option>
-            <option value="webdev">Web Developer</option>
+          Track{" "}
+          <select value={role} onChange={(e) => setRole(e.target.value)}>
+            <option value="frontend">Frontend</option>
             <option value="fullstack">Full Stack</option>
             <option value="mobile">Mobile</option>
-            <option value="data">Data Analyst</option>
+            <option value="all">All</option>
           </select>
         </label>
 
         <label>
-          Range{" "}
+          Freshness{" "}
           <select
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
+            value={hours}
+            onChange={(e) => setHours(Number(e.target.value))}
           >
-            <option value={1}>Last 24h</option>
-            <option value={3}>Last 3 days</option>
-            <option value={7}>Last 7 days</option>
-            <option value={14}>Last 14 days</option>
+            <option value={24}>Last 24h</option>
+            <option value={48}>Last 48h</option>
+            <option value={72}>Last 72h</option>
+            <option value={168}>Last 7 days</option>
           </select>
         </label>
 
@@ -89,6 +102,33 @@ export default function Page() {
             min={-10}
             max={20}
           />
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={remoteOnly}
+            onChange={(e) => setRemoteOnly(e.target.checked)}
+          />{" "}
+          Remote only
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={strictTitles}
+            onChange={(e) => setStrictTitles(e.target.checked)}
+          />{" "}
+          Strong title match
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={excludeSenior}
+            onChange={(e) => setExcludeSenior(e.target.checked)}
+          />{" "}
+          Exclude senior/staff
         </label>
 
         <button
@@ -135,6 +175,9 @@ export default function Page() {
                 <div style={{ fontSize: 12, opacity: 0.6 }}>
                   Tags: {job.tags?.join(", ")}
                 </div>
+                <div style={{ fontSize: 12, opacity: 0.6 }}>
+                  Seen: {new Date(job.last_seen_utc).toLocaleString()}
+                </div>
               </div>
               <div style={{ fontWeight: 800 }}>Score {job.score}</div>
             </div>
@@ -143,8 +186,7 @@ export default function Page() {
 
         {jobs.length === 0 && (
           <div style={{ opacity: 0.7, marginTop: 12 }}>
-            No jobs found. Once ingestion writes into Supabase, this will
-            populate.
+            No matching jobs found for the current filters.
           </div>
         )}
       </div>
