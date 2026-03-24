@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime, timezone
 
 import jobscout.services.scoring as scoring
 print("[DEBUG] scoring.py path:", scoring.__file__)
@@ -42,6 +43,7 @@ def build_job_key(j: Job) -> str:
 
 
 def main() -> None:
+    now_utc = datetime.now(timezone.utc).isoformat()
     supabase_url = os.environ["SUPABASE_URL"]
     service_key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
     sb = create_client(supabase_url, service_key)
@@ -70,8 +72,8 @@ def main() -> None:
                 "score": int(score),
                 "tags": tags,
                 "excluded": bool(excluded),
-                # Optional: store reasons as a readable string
                 "reasons": ",".join(reasons) if reasons else None,
+                "ingested_at": now_utc,
             }
         )
 
