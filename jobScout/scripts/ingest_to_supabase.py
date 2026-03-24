@@ -73,7 +73,7 @@ def main() -> None:
                 "tags": tags,
                 "excluded": bool(excluded),
                 "reasons": ",".join(reasons) if reasons else None,
-                "ingested_at": now_utc,
+                "last_seen_utc": now_utc,
             }
         )
 
