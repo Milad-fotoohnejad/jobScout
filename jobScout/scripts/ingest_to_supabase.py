@@ -46,7 +46,8 @@ def main() -> None:
     service_key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
     sb = create_client(supabase_url, service_key)
 
-    sources = Path("jobScout/src/jobscout/config/sources.yaml")
+    BASE_DIR = Path(__file__).resolve().parents[1]
+    sources = BASE_DIR / "src/jobscout/config/sources.yaml"
     result = pipeline_run_once(sources_path=sources, debug=True)
 
     rows: list[dict] = []
