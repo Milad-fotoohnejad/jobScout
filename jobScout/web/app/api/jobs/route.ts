@@ -10,6 +10,7 @@ type JobRow = {
   last_seen_utc: string | null;
   excluded: boolean | null;
   description?: string | null;
+  posted_at?: string | null;
 };
 
 const ROLE_KEYWORDS: Record<string, string[]> = {
@@ -93,6 +94,10 @@ function isRemote(job: JobRow) {
   );
 }
 
+function getEffectiveTimestamp(job: JobRow) {
+  return new Date(job.posted_at ?? job.last_seen_utc ?? 0).getTime();
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
 
@@ -118,10 +123,10 @@ export async function GET(req: Request) {
 
   let query =
     `${supabaseUrl}/rest/v1/jobs` +
-    `?select=company,title,location,url,score,tags,last_seen_utc,excluded,description` +
+    `?select=company,title,location,url,score,tags,last_seen_utc,posted_at,excluded,description` +
     `&last_seen_utc=gte.${encodeURIComponent(since)}` +
     `&score=gte.${minScore}` +
-    `&order=score.desc,last_seen_utc.desc`;
+    `&order=last_seen_utc.desc`;
 
   if (devOnly) query += `&excluded=eq.false`;
 
@@ -156,6 +161,14 @@ export async function GET(req: Request) {
   if (remoteOnly) {
     filtered = filtered.filter((job) => isRemote(job));
   }
+
+  filtered = filtered.sort((a, b) => {
+    const aTime = getEffectiveTimestamp(a);
+    const bTime = getEffectiveTimestamp(b);
+
+    if (bTime !== aTime) return bTime - aTime;
+    return (b.score ?? -999) - (a.score ?? -999);
+  });
 
   return NextResponse.json({ data: filtered });
 }

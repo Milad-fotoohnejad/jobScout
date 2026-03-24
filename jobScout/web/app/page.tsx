@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 type Job = {
   company: string;
@@ -10,6 +11,7 @@ type Job = {
   score: number;
   tags: string[];
   last_seen_utc: string;
+  posted_at?: string | null;
 };
 
 export default function Page() {
@@ -64,7 +66,7 @@ export default function Page() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(59,130,246,0.12), transparent 28%), #050816",
+          "radial-gradient(circle at top, rgba(59,130,246,0.14), transparent 28%), #050816",
         color: "#E5E7EB",
         fontFamily:
           'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -166,7 +168,7 @@ export default function Page() {
             style={{
               marginTop: 22,
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
               gap: 14,
             }}
           >
@@ -204,7 +206,16 @@ export default function Page() {
                 style={inputStyle}
               />
             </Field>
+          </div>
 
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 14,
+            }}
+          >
             <ToggleCard
               label="Remote only"
               checked={remoteOnly}
@@ -319,6 +330,18 @@ export default function Page() {
 
                     <div
                       style={{
+                        marginTop: 6,
+                        fontSize: 13,
+                        color: "#94A3B8",
+                      }}
+                    >
+                      {job.posted_at
+                        ? `Published ${formatDateTime(job.posted_at)}`
+                        : `Last seen ${formatDateTime(job.last_seen_utc)}`}
+                    </div>
+
+                    <div
+                      style={{
                         marginTop: 14,
                         display: "flex",
                         gap: 8,
@@ -353,7 +376,9 @@ export default function Page() {
                           border: "1px solid rgba(255,255,255,0.10)",
                         }}
                       >
-                        Seen {formatSeen(job.last_seen_utc)}
+                        {job.posted_at
+                          ? `Posted ${formatSeen(job.posted_at)}`
+                          : `Seen ${formatSeen(job.last_seen_utc)}`}
                       </span>
                     </div>
                   </div>
@@ -429,7 +454,7 @@ function Field({
   children,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <label
@@ -483,6 +508,7 @@ function ToggleCard({
           : "rgba(255,255,255,0.04)",
         color: "#E5E7EB",
         cursor: "pointer",
+        minHeight: 58,
       }}
     >
       <span style={{ fontSize: 14, fontWeight: 700 }}>{label}</span>
@@ -552,13 +578,28 @@ function formatSeen(value: string) {
   return `${diffDays}d ago`;
 }
 
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  return date.toLocaleString([], {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function scoreBackground(score: number) {
-  if (score >= 8) return "linear-gradient(135deg, rgba(16,185,129,0.25), rgba(5,150,105,0.18))";
-  if (score >= 5) return "linear-gradient(135deg, rgba(59,130,246,0.22), rgba(37,99,235,0.16))";
+  if (score >= 8) {
+    return "linear-gradient(135deg, rgba(16,185,129,0.25), rgba(5,150,105,0.18))";
+  }
+  if (score >= 5) {
+    return "linear-gradient(135deg, rgba(59,130,246,0.22), rgba(37,99,235,0.16))";
+  }
   return "linear-gradient(135deg, rgba(107,114,128,0.22), rgba(75,85,99,0.14))";
 }
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   borderRadius: 14,
   border: "1px solid rgba(255,255,255,0.10)",
